@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="./assets/banner.png" alt="Infinite Workflow — Resonate example" />
+</p>
+
 # Infinite Workflow (Health Monitor)
 
 A health monitoring workflow that runs forever — checking services, firing alerts, sleeping, repeating. Designed to run for days, weeks, or months without memory leaks, history bloat, or special lifecycle management.
