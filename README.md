@@ -23,9 +23,7 @@ while (iteration < config.maxIterations) {
 
 Each `ctx.run()` is an independent checkpoint. Each `ctx.sleep()` is a durable timer. The workflow can sleep for 30 seconds, 30 minutes, or 30 days — the timer survives process restarts.
 
-Temporal requires `continueAsNew()` to periodically reset event history (limit: 51,200 events). Without it, long-running workflows crash with "history too large." The developer must manually extract state and pass it forward.
-
-Resonate: just loop. No history accumulates.
+No event-history accumulation. No periodic state-serialization step to reset the workflow's bookkeeping. The loop just runs; the promise store handles durability per-iteration.
 
 ## Prerequisites
 
@@ -133,30 +131,11 @@ example-infinite-workflow-ts/
 
 **Lines of code**: ~170 total, ~20 lines of monitor workflow logic.
 
-## Comparison
+## Production note
 
-Temporal has two patterns for long-running workflows:
-
-1. **`continueAsNew`** — resets history by atomically ending the current execution and starting a new one with a fresh event history. State must be explicitly serialized into function arguments.
-
-2. **`sleep('30 days')`** — works for low-frequency loops, but eventually hits the 51,200 event limit on high-frequency or long-lived workflows.
-
-Resonate: just loop with `ctx.sleep()`. No history, no limits, no state serialization.
-
-| | Resonate | Temporal (continueAsNew) | Temporal (sleep) |
-|---|---|---|---|
-| Infinite loop | `while (true)` with `yield*` | Recursive with `continueAsNew()` | `while (true)` with race/condition |
-| History management | N/A (no history) | Manual (must call continueAsNew) | Eventually hits 51,200 limit |
-| State carry-forward | Generator locals (automatic) | Function arguments (manual) | Workflow state (automatic, until limit) |
-| Concepts required | `ctx.run()` + `ctx.sleep()` | `continueAsNew` + state serialization | Signals, conditions, `Promise.race` |
-| Source files | 2 | 3 | 5 (including tests) |
-| Workflow LOC | ~20 | ~12 | ~22 |
-
-**Honest trade-off**: Temporal's `continueAsNew` pattern is well-understood and battle-tested in production at massive scale. Resonate's "just loop" approach is simpler but the embedded mode used in this demo stores state in memory. For production long-running workflows, use `resonate dev` or the Resonate server for persistent storage.
+The embedded mode used in this demo stores state in memory. For production long-running workflows, run the Resonate server (`resonate dev` or a deployed instance) to get persistent storage across restarts. The workflow code is unchanged between embedded and server modes — only the Resonate instantiation changes.
 
 ## Learn More
 
 - [Resonate documentation](https://docs.resonatehq.io)
-- [Temporal continue-as-new sample](https://github.com/temporalio/samples-typescript/tree/main/continue-as-new)
-- [Temporal sleep-for-days sample](https://github.com/temporalio/samples-typescript/tree/main/sleep-for-days)
-- [Temporal workflow execution limits](https://docs.temporal.io/workflow-execution/limits)
+- [Durable sleep pattern](https://github.com/resonatehq-examples/example-durable-sleep-ts) — the underlying timer primitive
