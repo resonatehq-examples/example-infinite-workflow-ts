@@ -78,3 +78,5 @@ if (shouldCrash) {
     "\nThe workflow can run for days, weeks, or months without intervention.",
   );
 }
+
+await resonate.stop();
